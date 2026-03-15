@@ -1,6 +1,6 @@
 # SysAgen — Sistema de Agendamento de Equipamentos NTI
 
-Sistema web desenvolvido em Django para gerenciamento de reservas de notebooks e tablets da ETEC Jornalista Roberto Marinho.
+Sistema web desenvolvido em Django para gerenciamento de reservas de notebooks e tablets da Escola CAMB.
 
 ---
 
@@ -31,7 +31,7 @@ Sistema web desenvolvido em Django para gerenciamento de reservas de notebooks e
 ### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/SysAgen.git
+git clone https://github.com/srxandes/SysAgen.git
 cd SysAgen
 ```
 
@@ -185,5 +185,4 @@ SysAgen/
 
 ## Desenvolvido por
 
-Gustavo — 2º ano Informática para Internet  
-ETEC Jornalista Roberto Marinho
+xand3 — 2º ano Informática para Internet
