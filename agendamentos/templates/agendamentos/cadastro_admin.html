@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar Admin | NTI</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .card { border: none; border-radius: 16px; }
+        .form-label { font-weight: 600; color: #495057; }
+        .header-badge {
+            display: inline-flex; align-items: center;
+            padding: 0.4rem 1rem; background: #eef2ff;
+            border-radius: 50px; color: #4f46e5;
+            font-size: 0.8rem; font-weight: 700; margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+
+            <div class="text-center mb-4">
+                <div class="header-badge">
+                    <i class="bi bi-shield-lock-fill me-2"></i> ACESSO RESTRITO — NTI
+                </div>
+                <h1 class="fw-bold text-dark h3">Cadastrar Novo Admin</h1>
+                <p class="text-muted small">O novo usuário terá acesso total ao painel.</p>
+            </div>
+
+            {% if sucesso %}
+                <div class="alert alert-success shadow-sm d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                    <span>{{ sucesso }}</span>
+                </div>
+            {% endif %}
+
+            {% if erro %}
+                <div class="alert alert-danger shadow-sm d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                    <span>{{ erro }}</span>
+                </div>
+            {% endif %}
+
+            <div class="card shadow-sm p-4">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Usuário</label>
+                        <input type="text" name="username" class="form-control" placeholder="nome de login" required autofocus>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">E-mail <span class="text-muted fw-normal">(opcional)</span></label>
+                        <input type="email" name="email" class="form-control" placeholder="admin@escolacamb.com.br">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Senha</label>
+                        <input type="password" name="password1" class="form-control" placeholder="mínimo 8 caracteres" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Confirmar Senha</label>
+                        <input type="password" name="password2" class="form-control" placeholder="repita a senha" required>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4 fw-bold">
+                            <i class="bi bi-person-plus-fill me-2"></i>Criar Admin
+                        </button>
+                        <a href="/admin/" class="btn btn-light border px-4">Voltar</a>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Lista de admins (só para tecno_camb) -->
+    {% if pode_deletar and admins %}
+    <div class="row justify-content-center mt-4">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm p-4">
+                <h2 class="fw-bold h5 mb-3"><i class="bi bi-people-fill me-2 text-danger"></i>Gerenciar Admins</h2>
+                <ul class="list-group list-group-flush">
+                    {% for admin in admins %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div>
+                            <span class="fw-600">{{ admin.username }}</span>
+                            {% if admin.email %}<br><small class="text-muted">{{ admin.email }}</small>{% endif %}
+                        </div>
+                        <form method="post" action="{% url 'deletar_admin' admin.id %}"
+                              onsubmit="return confirm('Tem certeza que deseja remover o admin {{ admin.username }}?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash3-fill"></i> Remover
+                            </button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</body>
+</html>

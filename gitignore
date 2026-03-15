@@ -1,0 +1,33 @@
+# Variáveis de ambiente (NUNCA enviar pro GitHub!)
+.env
+
+# Ambiente virtual Python
+venv/
+
+# Cache do Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Banco de dados local
+db.sqlite3
+
+# Credenciais do Google Calendar
+credentials.json
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos estáticos gerados pelo collectstatic
+staticfiles/
+
+# Backups do banco
+backups/
+
+# Logs do servidor
+logs/
+
+# Configurações de editores
+.vscode/
+.idea/

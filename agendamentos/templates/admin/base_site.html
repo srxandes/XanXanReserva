@@ -1,0 +1,15 @@
+{% extends "admin/base.html" %}
+
+{% block branding %}
+<div id="site-name">
+    <a href="/admin/">NTI — Painel de Administração</a>
+</div>
+{% if custom_links %}
+<div style="background:#2c4a5e; padding:6px 20px; display:flex; gap:16px; flex-wrap:wrap; align-items:center; border-top:1px solid #ffffff22;">
+    {% for link in custom_links %}
+        <a href="{{ link.url }}" style="color:#fff; font-size:0.8rem; text-decoration:none; opacity:0.9;">{{ link.label }}</a>
+        {% if not forloop.last %}<span style="color:#ffffff33;">|</span>{% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

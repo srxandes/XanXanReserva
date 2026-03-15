@@ -1,0 +1,368 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<style>
+    .dash-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .dash-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-left: 4px solid #ccc;
+    }
+    .dash-card.azul { border-left-color: #4f46e5; }
+    .dash-card.verde { border-left-color: #10b981; }
+    .dash-card.laranja { border-left-color: #f59e0b; }
+    .dash-card.vermelho { border-left-color: #ef4444; }
+
+    .dash-card .numero {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #1e293b;
+        line-height: 1;
+        margin-bottom: 4px;
+    }
+    .dash-card .label {
+        font-size: 0.8rem;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+    .dash-card .sub {
+        font-size: 0.78rem;
+        color: #94a3b8;
+        margin-top: 6px;
+    }
+
+    .section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 24px 0 12px;
+        padding-bottom: 6px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .estoque-bar {
+        background: #f1f5f9;
+        border-radius: 999px;
+        height: 10px;
+        margin-top: 8px;
+        overflow: hidden;
+    }
+    .estoque-bar-fill {
+        height: 100%;
+        border-radius: 999px;
+        transition: width 0.5s ease;
+    }
+    .fill-azul { background: #4f46e5; }
+    .fill-verde { background: #10b981; }
+    .fill-vermelho { background: #ef4444; }
+
+    .estoque-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 12px;
+    }
+    .estoque-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+    }
+    .estoque-nome { font-weight: 700; color: #1e293b; }
+    .estoque-nums { font-size: 0.85rem; color: #64748b; }
+
+    .proximos-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .proximos-table th {
+        background: #f8fafc;
+        padding: 10px 14px;
+        text-align: left;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        color: #64748b;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+    }
+    .proximos-table td {
+        padding: 10px 14px;
+        font-size: 0.88rem;
+        color: #334155;
+        border-top: 1px solid #f1f5f9;
+    }
+    .proximos-table tr:hover td { background: #f8fafc; }
+
+    .badge-equip {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+    .badge-notebook { background: #eef2ff; color: #4f46e5; }
+    .badge-tablet { background: #ecfdf5; color: #10b981; }
+
+    .pendente-row { background: #fffbeb; }
+    .pendente-row td { color: #92400e; }
+
+    .btn-admin {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-decoration: none;
+        background: #4f46e5;
+        color: #fff;
+        margin-top: 4px;
+    }
+    .btn-admin:hover { background: #4338ca; color: #fff; }
+
+    .empty-state {
+        text-align: center;
+        padding: 30px;
+        color: #94a3b8;
+        font-size: 0.9rem;
+    }
+</style>
+
+<h1 style="font-size:1.6rem; font-weight:800; color:#1e293b; margin-bottom:4px;">📊 Dashboard NTI</h1>
+<p style="color:#64748b; font-size:0.85rem; margin-bottom:24px;">Visão geral do sistema de agendamentos</p>
+
+<!-- Cards de resumo -->
+<div class="dash-grid">
+    <div class="dash-card azul">
+        <div class="numero">{{ total_hoje }}</div>
+        <div class="label">Agendamentos Hoje</div>
+        <div class="sub">{{ hoje_notebooks }} notebooks · {{ hoje_tablets }} tablets</div>
+    </div>
+    <div class="dash-card verde">
+        <div class="numero">{{ total_semana }}</div>
+        <div class="label">Agendamentos na Semana</div>
+        <div class="sub">{{ semana_notebooks }} notebooks · {{ semana_tablets }} tablets</div>
+    </div>
+    <div class="dash-card {% if total_pendentes > 0 %}vermelho{% else %}verde{% endif %}">
+        <div class="numero">{{ total_pendentes }}</div>
+        <div class="label">Pendentes</div>
+        <div class="sub">
+            {% if total_pendentes > 0 %}
+                <a href="/admin/agendamentos/agendamento/?status__exact=pendente" class="btn-admin">Ver pendentes →</a>
+            {% else %}
+                Nenhum aguardando decisão
+            {% endif %}
+        </div>
+    </div>
+    <div class="dash-card laranja">
+        <div class="numero">{{ disponiveis_notebooks }}</div>
+        <div class="label">Notebooks Disponíveis Agora</div>
+        <div class="sub">de {{ limite_notebooks }} no total</div>
+    </div>
+</div>
+
+<!-- Estoque atual -->
+<div class="section-title">📦 Estoque Atual</div>
+<div class="estoque-card">
+    <div class="estoque-header">
+        <span class="estoque-nome">💻 Notebooks</span>
+        <span class="estoque-nums">{{ em_uso_notebooks }} em uso · {{ disponiveis_notebooks }} disponíveis · {{ limite_notebooks }} total</span>
+    </div>
+    <div class="estoque-bar">
+        <div class="estoque-bar-fill {% if pct_notebooks > 80 %}fill-vermelho{% elif pct_notebooks > 50 %}fill-azul{% else %}fill-verde{% endif %}"
+             style="width: {{ pct_notebooks }}%"></div>
+    </div>
+</div>
+<div class="estoque-card">
+    <div class="estoque-header">
+        <span class="estoque-nome">📱 Tablets</span>
+        <span class="estoque-nums">{{ em_uso_tablets }} em uso · {{ disponiveis_tablets }} disponíveis · {{ limite_tablets }} total</span>
+    </div>
+    <div class="estoque-bar">
+        <div class="estoque-bar-fill {% if pct_tablets > 80 %}fill-vermelho{% elif pct_tablets > 50 %}fill-azul{% else %}fill-verde{% endif %}"
+             style="width: {{ pct_tablets }}%"></div>
+    </div>
+</div>
+
+<!-- Pendentes -->
+{% if pendentes %}
+<div class="section-title">⏳ Solicitações Pendentes</div>
+<table class="proximos-table">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Equipamento</th>
+            <th>Qtd</th>
+            <th>Início</th>
+            <th>Fim</th>
+            <th>Ação</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ag in pendentes %}
+        <tr class="pendente-row">
+            <td><strong>{{ ag.nome }}</strong><br><small>{{ ag.turma }}</small></td>
+            <td><span class="badge-equip badge-{{ ag.equipamento }}">{{ ag.get_equipamento_display }}</span></td>
+            <td>{{ ag.quantidade }}</td>
+            <td>{{ ag.data_inicio|date:"d/m/Y H:i" }}</td>
+            <td>{{ ag.data_fim|date:"d/m/Y H:i" }}</td>
+            <td><a href="/admin/agendamentos/agendamento/{{ ag.pk }}/change/" class="btn-admin">Decidir →</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<!-- Próximos agendamentos -->
+<div class="section-title">📅 Próximos Agendamentos</div>
+{% if proximos %}
+<table class="proximos-table">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Turma</th>
+            <th>Equipamento</th>
+            <th>Qtd</th>
+            <th>Início</th>
+            <th>Fim</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ag in proximos %}
+        <tr>
+            <td><strong>{{ ag.nome }}</strong></td>
+            <td>{{ ag.turma }}</td>
+            <td><span class="badge-equip badge-{{ ag.equipamento }}">{{ ag.get_equipamento_display }}</span></td>
+            <td>{{ ag.quantidade }}</td>
+            <td>{{ ag.data_inicio|date:"d/m/Y H:i" }}</td>
+            <td>{{ ag.data_fim|date:"H:i" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">Nenhum agendamento futuro aprovado no momento.</div>
+{% endif %}
+
+<!-- Histórico -->
+<div class="section-title">🗂️ Histórico de Agendamentos</div>
+
+<form method="get" style="background:#fff; border-radius:12px; padding:16px 20px; box-shadow:0 2px 8px rgba(0,0,0,0.08); margin-bottom:16px;">
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <div>
+            <label style="font-size:0.75rem; font-weight:700; color:#64748b; display:block; margin-bottom:4px;">DATA INÍCIO</label>
+            <input type="date" name="data_inicio" value="{{ filtro_inicio }}"
+                style="border:1px solid #e2e8f0; border-radius:8px; padding:6px 10px; font-size:0.85rem;">
+        </div>
+        <div>
+            <label style="font-size:0.75rem; font-weight:700; color:#64748b; display:block; margin-bottom:4px;">DATA FIM</label>
+            <input type="date" name="data_fim" value="{{ filtro_fim }}"
+                style="border:1px solid #e2e8f0; border-radius:8px; padding:6px 10px; font-size:0.85rem;">
+        </div>
+        <div>
+            <label style="font-size:0.75rem; font-weight:700; color:#64748b; display:block; margin-bottom:4px;">EQUIPAMENTO</label>
+            <select name="equipamento" style="border:1px solid #e2e8f0; border-radius:8px; padding:6px 10px; font-size:0.85rem;">
+                <option value="">Todos</option>
+                <option value="notebook" {% if filtro_equip == 'notebook' %}selected{% endif %}>Notebook</option>
+                <option value="tablet" {% if filtro_equip == 'tablet' %}selected{% endif %}>Tablet</option>
+            </select>
+        </div>
+        <div>
+            <label style="font-size:0.75rem; font-weight:700; color:#64748b; display:block; margin-bottom:4px;">STATUS</label>
+            <select name="status" style="border:1px solid #e2e8f0; border-radius:8px; padding:6px 10px; font-size:0.85rem;">
+                <option value="">Todos</option>
+                <option value="aprovado" {% if filtro_status == 'aprovado' %}selected{% endif %}>Aprovado</option>
+                <option value="pendente" {% if filtro_status == 'pendente' %}selected{% endif %}>Pendente</option>
+                <option value="rejeitado" {% if filtro_status == 'rejeitado' %}selected{% endif %}>Rejeitado</option>
+            </select>
+        </div>
+        <button type="submit" style="background:#4f46e5; color:#fff; border:none; border-radius:8px; padding:7px 18px; font-size:0.85rem; font-weight:600; cursor:pointer;">
+            🔍 Filtrar
+        </button>
+        <a href="/admin/dashboard/" style="background:#f1f5f9; color:#64748b; border-radius:8px; padding:7px 14px; font-size:0.85rem; font-weight:600; text-decoration:none;">
+            Limpar
+        </a>
+        <a id="btn-exportar" href="#" style="background:#16a34a; color:#fff; border-radius:8px; padding:7px 14px; font-size:0.85rem; font-weight:600; text-decoration:none;">
+            📥 Exportar Excel
+        </a>
+    </div>
+</form>
+<script>
+    document.getElementById('btn-exportar').addEventListener('click', function(e) {
+        e.preventDefault();
+        const params = new URLSearchParams(window.location.search);
+        window.location.href = '/nti/exportar-historico/?' + params.toString();
+    });
+</script>
+
+{% if historico_totais %}
+<div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+    <div style="background:#eef2ff; border-radius:10px; padding:12px 18px; flex:1; min-width:140px;">
+        <div style="font-size:0.72rem; font-weight:700; color:#4f46e5; text-transform:uppercase;">Total de Agendamentos</div>
+        <div style="font-size:1.6rem; font-weight:800; color:#1e293b;">{{ historico_totais.total }}</div>
+    </div>
+    <div style="background:#ecfdf5; border-radius:10px; padding:12px 18px; flex:1; min-width:140px;">
+        <div style="font-size:0.72rem; font-weight:700; color:#10b981; text-transform:uppercase;">Notebooks Utilizados</div>
+        <div style="font-size:1.6rem; font-weight:800; color:#1e293b;">{{ historico_totais.notebooks }}</div>
+    </div>
+    <div style="background:#f0fdf4; border-radius:10px; padding:12px 18px; flex:1; min-width:140px;">
+        <div style="font-size:0.72rem; font-weight:700; color:#059669; text-transform:uppercase;">Tablets Utilizados</div>
+        <div style="font-size:1.6rem; font-weight:800; color:#1e293b;">{{ historico_totais.tablets }}</div>
+    </div>
+</div>
+{% endif %}
+
+{% if historico %}
+<table class="proximos-table">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Turma</th>
+            <th>Equipamento</th>
+            <th>Qtd</th>
+            <th>Início</th>
+            <th>Fim</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ag in historico %}
+        <tr>
+            <td><strong>{{ ag.nome }}</strong></td>
+            <td>{{ ag.turma }}</td>
+            <td><span class="badge-equip badge-{{ ag.equipamento }}">{{ ag.get_equipamento_display }}</span></td>
+            <td>{{ ag.quantidade }}</td>
+            <td>{{ ag.data_inicio|date:"d/m/Y H:i" }}</td>
+            <td>{{ ag.data_fim|date:"d/m/Y H:i" }}</td>
+            <td>
+                {% if ag.status == 'aprovado' %}
+                    <span style="color:green; font-weight:600;">✅ Aprovado</span>
+                {% elif ag.status == 'pendente' %}
+                    <span style="color:#d97706; font-weight:600;">⏳ Pendente</span>
+                {% else %}
+                    <span style="color:red; font-weight:600;">❌ Rejeitado</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">Nenhum agendamento encontrado para os filtros selecionados.</div>
+{% endif %}
+
+{% endblock %}

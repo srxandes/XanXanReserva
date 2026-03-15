@@ -1,0 +1,2 @@
+[10/03/2026 16:11:31,88] Servidor iniciado. 
+INFO:waitress:Serving on http://0.0.0.0:80

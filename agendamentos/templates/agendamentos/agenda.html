@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Agenda de Equipamentos</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8f9fa; padding-top: 50px; }
+        .calendar-container { background: white; border-radius: 15px; padding: 20px; min-height: 700px; }
+        .responsive-iframe {
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            padding-top: 60%; 
+        }
+        .responsive-iframe iframe {
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            width: 100%; height: 100%; border: none;
+        }
+        .btn-subscribe { font-size: 0.9rem; transition: 0.3s; }
+        .btn-subscribe:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+    <div class="container mb-5">
+        <div class="calendar-container shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="display-6 text-primary">Agenda de Reservas</h1>
+                <a href="{% url 'index' %}" class="btn btn-outline-secondary">Voltar</a>
+            </div>
+
+            <div class="responsive-iframe mb-4">
+                <iframe 
+                    src="https://calendar.google.com/calendar/embed?height=600&wkst=1&bgcolor=%23ffffff&ctz=America%2FSao_Paulo&showTitle=0&showNav=1&showPrint=0&showTabs=1&showCalendars=0&src=a0c604047e5616feb189bdd1dae52a60bc63d8ea43e4396bf6ede36867f7a6a0%40group.calendar.google.com&src=a26a4abae87afddd0c39094d4f7a16914b0638672dd9c0003f0566c2fdda4eba%40group.calendar.google.com&color=%23039BE5&color=%237CB342" 
+                    style="border:0" scrolling="no">
+                </iframe>
+            </div>
+
+            <div class="row align-items-center border-top pt-3">
+                <div class="col-md-6">
+                    <div class="d-flex">
+                        <div class="me-4">
+                            <span class="badge" style="background-color: #039BE5; width: 12px; height: 12px; display: inline-block;"></span>
+                            <small class="text-muted">Notebooks</small>
+                        </div>
+                        <div>
+                            <span class="badge" style="background-color: #7CB342; width: 12px; height: 12px; display: inline-block;"></span>
+                            <small class="text-muted">Tablets</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                    <span class="small text-muted me-2">Adicionar ao seu celular:</span>
+                    <a href="https://calendar.google.com/calendar/render?cid=a0c604047e5616feb189bdd1dae52a60bc63d8ea43e4396bf6ede36867f7a6a0@group.calendar.google.com" 
+                       target="_blank" class="btn btn-sm btn-outline-primary btn-subscribe me-2">
+                       <i class="bi bi-google"></i> Notebooks
+                    </a>
+                    <a href="https://calendar.google.com/calendar/render?cid=a26a4abae87afddd0c39094d4f7a16914b0638672dd9c0003f0566c2fdda4eba@group.calendar.google.com" 
+                       target="_blank" class="btn btn-sm btn-outline-success btn-subscribe">
+                       <i class="bi bi-google"></i> Tablets
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

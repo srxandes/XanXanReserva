@@ -1,0 +1,90 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+
+<style>
+    .logs-wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+    .logs-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+    .logs-title { font-size:1.4rem; font-weight:800; color:#1e293b; }
+    .filter-bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .filter-bar select { border:1px solid #e2e8f0; border-radius:8px; padding:6px 12px; font-size:0.85rem; }
+    .filter-bar button { background:#4f46e5; color:#fff; border:none; border-radius:8px; padding:7px 16px; font-size:0.85rem; font-weight:600; cursor:pointer; }
+    .filter-bar a { background:#f1f5f9; color:#64748b; border-radius:8px; padding:7px 12px; font-size:0.85rem; font-weight:600; text-decoration:none; }
+    .log-table { width:100%; border-collapse:collapse; background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.07); }
+    .log-table thead tr { background:#2c4a5e; }
+    .log-table thead th { color:#fff; font-size:0.78rem; font-weight:700; text-transform:uppercase; padding:12px 14px; text-align:left; letter-spacing:0.4px; }
+    .log-table tbody tr { border-bottom:1px solid #f1f5f9; transition:background 0.15s; }
+    .log-table tbody tr:hover { background:#f8fafc; }
+    .log-table tbody td { padding:11px 14px; font-size:0.87rem; color:#334155; vertical-align:middle; }
+    .badge-tipo { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:999px; font-size:0.75rem; font-weight:700; }
+    .tipo-agendamento_criado    { background:#dbeafe; color:#1d4ed8; }
+    .tipo-agendamento_aprovado  { background:#d1fae5; color:#059669; }
+    .tipo-agendamento_rejeitado { background:#fee2e2; color:#dc2626; }
+    .tipo-agendamento_expirado  { background:#fef3c7; color:#d97706; }
+    .tipo-email_bloqueado       { background:#fce7f3; color:#9d174d; }
+    .tipo-email_desbloqueado    { background:#f3e8ff; color:#7c3aed; }
+    .tipo-admin_criado          { background:#ecfdf5; color:#047857; }
+    .pagination { display:flex; gap:6px; justify-content:center; margin-top:20px; }
+    .pagination a, .pagination span { padding:6px 12px; border-radius:8px; font-size:0.85rem; font-weight:600; text-decoration:none; }
+    .pagination a { background:#f1f5f9; color:#4f46e5; }
+    .pagination span { background:#4f46e5; color:#fff; }
+    .empty-state { text-align:center; padding:40px; color:#94a3b8; font-size:0.95rem; }
+
+    .icones { font-size:1rem; }
+</style>
+
+<div class="logs-wrap">
+    <div class="logs-header">
+        <div class="logs-title">📋 Logs de Atividade</div>
+        <form method="get" class="filter-bar">
+            <select name="tipo">
+                <option value="">Todos os eventos</option>
+                {% for valor, label in tipos %}
+                    <option value="{{ valor }}" {% if filtro_tipo == valor %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Filtrar</button>
+            <a href="/admin/logs/">Limpar</a>
+        </form>
+    </div>
+
+    {% if logs %}
+    <table class="log-table">
+        <thead>
+            <tr>
+                <th>Data/Hora</th>
+                <th>Evento</th>
+                <th>Descrição</th>
+                <th>Usuário</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td style="white-space:nowrap; color:#64748b;">{{ log.criado_em|date:"d/m/Y H:i:s" }}</td>
+                <td><span class="badge-tipo tipo-{{ log.tipo }}">{{ log.get_tipo_display }}</span></td>
+                <td>{{ log.descricao }}</td>
+                <td style="color:#94a3b8; font-size:0.82rem;">{{ log.usuario|default:"sistema" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Paginação -->
+    {% if logs.has_other_pages %}
+    <div class="pagination">
+        {% if logs.has_previous %}
+            <a href="?page={{ logs.previous_page_number }}&tipo={{ filtro_tipo }}">← Anterior</a>
+        {% endif %}
+        <span>{{ logs.number }} / {{ logs.paginator.num_pages }}</span>
+        {% if logs.has_next %}
+            <a href="?page={{ logs.next_page_number }}&tipo={{ filtro_tipo }}">Próxima →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">Nenhum log encontrado.</div>
+    {% endif %}
+</div>
+
+{% endblock %}

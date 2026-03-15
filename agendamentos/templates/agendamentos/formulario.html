@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamento NTI</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
+
+    <style>
+        body { background-color: #f4f7f6; font-family: 'Inter', sans-serif; }
+        .card { border: none; border-radius: 12px; }
+        .invalid-feedback { display: none; }
+        .was-validated .form-control:invalid ~ .invalid-feedback { display: block; }
+        .form-label { font-weight: 600; color: #495057; }
+        .terms-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; }
+        
+        /* Ajustes Calendário */
+        .flatpickr-input[readonly] { background-color: #fff !important; }
+        .input-group-text { background-color: #f8fafc; color: #64748b; border-right: none; }
+        .flatpickr-input { border-left: none !important; }
+
+        /* --- Seletor de Quantidade Moderno --- */
+        .quantity-wrapper {
+            display: inline-flex;
+            align-items: center;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 5px;
+            gap: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .qty-btn {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            border: none;
+            background: #f1f5f9;
+            color: #4f46e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .qty-btn:hover:not(:disabled) { background: #4f46e5; color: #fff; }
+        .qty-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        
+        .qty-input {
+            width: 50px;
+            text-align: center;
+            border: none;
+            font-weight: 700;
+            color: #1e293b;
+            background: transparent;
+            outline: none;
+            /* Remove setas padrão do input number */
+            -moz-appearance: textfield;
+        }
+        .qty-input::-webkit-outer-spin-button,
+        .qty-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* --- Balão de Ajuda (Tooltip) --- */
+        .help-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: #64748b;
+            font-size: 0.65rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-left: 5px;
+            vertical-align: middle;
+            transition: background 0.2s;
+        }
+        .help-icon:hover { background: #4f46e5; color: #fff; }
+
+        /* --- Tela de Carregamento --- */
+        #loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        .loader-spinner {
+            width: 50px; height: 50px;
+            border: 5px solid #f3f4f6;
+            border-bottom-color: #4f46e5;
+            border-radius: 50%;
+            animation: rotation 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes rotation { 0% { transform: rotate(0deg) } 100% { transform: rotate(360deg) } }
+    </style>
+</head>
+<body class="container py-5">
+
+    <div id="loading-overlay">
+        <div class="loader-spinner"></div>
+        <p class="fw-bold text-primary">Processando agendamento...</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-9 col-lg-7">
+            
+            <div class="text-center mb-4">
+                <h1 class="fw-bold text-primary">Solicitar Equipamento</h1>
+                <p class="text-muted small text-uppercase">Formulário de Reserva NTI</p>
+            </div>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="alert alert-info shadow-sm d-flex align-items-center mb-4">
+                <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                <span>{{ instrucoes }}</span>
+            </div>
+
+            <form method="post" class="card p-4 shadow-sm needs-validation" id="agendamentoForm" novalidate>
+                {% csrf_token %} 
+                
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+                
+                <div class="row">
+                    {% for field in form %}
+                        {% if field.name == 'aceitou_termos' %}
+                            <div class="col-12 mb-4">
+                                <div class="terms-box">
+                                    <div class="form-check">
+                                        {{ field }}
+                                        <label class="form-check-label small" for="{{ field.id_for_label }}">
+                                            Li e concordo com os 
+                                            <a href="/static/pdf/termos.pdf" download="Termos_Uso_NTI.pdf" class="text-decoration-none fw-bold">
+                                                <i class="bi bi-file-earmark-pdf text-danger"></i> termos de uso
+                                            </a>.
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        {% elif field.name == 'data_inicio' or field.name == 'data_fim' %}
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ field.label }}</label>
+                                <div class="input-group shadow-sm" style="border-radius: 8px; overflow: hidden;">
+                                    <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                                    {{ field }}
+                                </div>
+                            </div>
+                        {% elif field.name == 'quantidade' %}
+                            <div class="col-12 mb-3">
+                                <label class="form-label d-block">{{ field.label }}</label>
+                                <div class="quantity-wrapper shadow-sm">
+                                    <button type="button" class="qty-btn" id="minus-btn"><i class="bi bi-dash-lg"></i></button>
+                                    <input type="number" name="quantidade" id="id_quantidade" value="1" min="1" class="qty-input">
+                                    <button type="button" class="qty-btn" id="plus-btn"><i class="bi bi-plus-lg"></i></button>
+                                </div>
+                                <div id="qty-limit-msg" class="text-muted small mt-1" style="display: none;"></div>
+                            </div>
+                        {% else %}
+                            <div class="col-12 mb-3">
+                                <label class="form-label">
+                                    {{ field.label }}
+                                    {% if field.name == 'turma' %}
+                                        <span class="help-icon" data-bs-toggle="tooltip" data-bs-placement="right" title="Digite a sua turma/Evento/Motivo do empréstimo">?</span>
+                                    {% elif field.name == 'software_especifico' %}
+                                        <span class="help-icon" data-bs-toggle="tooltip" data-bs-placement="right" title="Programas adicionais que precisam ser baixados, por exemplo: Steam">?</span>
+                                    {% elif field.name == 'perifericos' %}
+                                        <span class="help-icon" data-bs-toggle="tooltip" data-bs-placement="right" title="Por exemplo: Mouse, Fone de ouvido, Teclado...">?</span>
+                                    {% endif %}
+                                </label>
+                                {{ field }}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <div class="d-flex gap-2 mt-4">
+                    <button type="button" id="btn-abrir-modal" class="btn btn-primary px-5 shadow-sm py-2 fw-bold">
+                        <i class="bi bi-send-fill me-2"></i> Solicitar Agendamento
+                    </button>
+                    <a href="{% url 'index' %}" class="btn btn-light border px-4 py-2">Voltar</a>
+                </div>
+            </form>
+
+            <!-- Modal de Confirmação -->
+            <div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow" style="border-radius:16px;">
+                        <div class="modal-header border-0 pb-0">
+                            <h5 class="modal-title fw-bold">Confirmar Solicitação</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body py-3">
+                            <p class="text-muted small mb-3">Verifique os dados antes de confirmar:</p>
+                            <div style="background:#f8fafc; border-radius:12px; padding:16px;">
+                                <div class="row g-2">
+                                    <div class="col-12">
+                                        <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase; font-weight:700;">Solicitante</div>
+                                        <div class="fw-600" id="modal-nome" style="font-weight:600;"></div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase; font-weight:700;">Equipamento</div>
+                                        <div class="fw-600" id="modal-equip" style="font-weight:600;"></div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase; font-weight:700;">Quantidade</div>
+                                        <div class="fw-600" id="modal-qtd" style="font-weight:600;"></div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase; font-weight:700;">Início</div>
+                                        <div class="fw-600" id="modal-inicio" style="font-weight:600;"></div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-muted" style="font-size:0.72rem; text-transform:uppercase; font-weight:700;">Fim</div>
+                                        <div class="fw-600" id="modal-fim" style="font-weight:600;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 pt-0">
+                            <button type="button" class="btn btn-light border px-4" data-bs-dismiss="modal">Corrigir</button>
+                            <button type="button" id="btn-confirmar" class="btn btn-primary px-4 fw-bold">
+                                <i class="bi bi-check-lg me-1"></i> Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar tooltips do Bootstrap
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+            new bootstrap.Tooltip(el);
+        });
+
+        const form = document.getElementById('agendamentoForm');
+        const overlay = document.getElementById('loading-overlay');
+        
+        const minusBtn = document.getElementById('minus-btn');
+        const plusBtn = document.getElementById('plus-btn');
+        const qtyInput = document.getElementById('id_quantidade');
+        const qtyMsg = document.getElementById('qty-limit-msg');
+
+        const campoInicio = document.querySelector('input[name="data_inicio"]');
+        const campoFim = document.querySelector('input[name="data_fim"]');
+        const campoEquip = document.querySelector('select[name="equipamento"]');
+
+        const reservasExistentes = [
+            {% for res in agendamentos_aprovados %}
+            {
+                inicio: new Date("{{ res.data_inicio|date:'c' }}"),
+                fim: new Date("{{ res.data_fim|date:'c' }}"),
+                equip: "{{ res.equipamento }}",
+                quant: {{ res.quantidade }},
+                pendente: false
+            },
+            {% endfor %}
+            {% for res in agendamentos_pendentes %}
+            {
+                inicio: new Date("{{ res.data_inicio|date:'c' }}"),
+                fim: new Date("{{ res.data_fim|date:'c' }}"),
+                equip: "{{ res.equipamento }}",
+                quant: {{ res.quantidade }},
+                pendente: true
+            },
+            {% endfor %}
+        ];
+
+        const antecedenciaMinutos = {{ antecedencia_minima }};
+        const agora = new Date();
+        const minDatePermitido = new Date(agora.getTime() + antecedenciaMinutos * 60 * 1000);
+
+        const fpConfig = {
+            enableTime: true,
+            dateFormat: "Y-m-dTH:i",
+            altInput: true,
+            altFormat: "d/m/Y H:i",
+            time_24hr: true,
+            locale: "pt",
+            minDate: minDatePermitido,
+        };
+
+        const fpInicio = flatpickr(campoInicio, {
+            ...fpConfig,
+            onChange: (selectedDates) => {
+                if (selectedDates[0]) {
+                    fpFim.set("minDate", new Date(selectedDates[0].getTime() + 60000));
+                    fpFim.set("maxDate", new Date(selectedDates[0].getTime() + 86400000));
+                }
+                atualizarTudo();
+            }
+        });
+
+        const fpFim = flatpickr(campoFim, { ...fpConfig, onChange: atualizarTudo });
+
+        let maxGlobal = 1;
+
+        // Lógica de digitação manual
+        qtyInput.addEventListener('input', function() {
+            let val = parseInt(this.value);
+            if (val > maxGlobal) {
+                this.value = maxGlobal;
+                this.classList.add('text-danger');
+                setTimeout(() => this.classList.remove('text-danger'), 500);
+            }
+            if (val < 1 && this.value !== "") this.value = 1;
+            atualizarBotoes();
+        });
+
+        qtyInput.addEventListener('blur', function() {
+            if (this.value === "" || parseInt(this.value) < 1) this.value = 1;
+            atualizarBotoes();
+        });
+
+        // Botões de clique
+        minusBtn.addEventListener('click', () => {
+            if (parseInt(qtyInput.value) > 1) {
+                qtyInput.value--;
+                atualizarBotoes();
+            }
+        });
+
+        plusBtn.addEventListener('click', () => {
+            if (parseInt(qtyInput.value) < maxGlobal) {
+                qtyInput.value++;
+                atualizarBotoes();
+            }
+        });
+
+        function atualizarBotoes() {
+            const val = parseInt(qtyInput.value) || 0;
+            minusBtn.disabled = val <= 1;
+            plusBtn.disabled = val >= maxGlobal || maxGlobal === 0;
+            verificarAlertaAprovacao();
+        }
+
+        // Modal de confirmação
+        const modalEl = document.getElementById('modalConfirmacao');
+        const modal = new bootstrap.Modal(modalEl);
+        const btnAbrirModal = document.getElementById('btn-abrir-modal');
+        const btnConfirmar = document.getElementById('btn-confirmar');
+
+        btnAbrirModal.addEventListener('click', () => {
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+
+            // Preenche os dados do modal
+            const nomeVal = document.querySelector('input[name="nome"]').value;
+            const equipVal = campoEquip.options[campoEquip.selectedIndex].text;
+            const qtdVal = qtyInput.value;
+
+            // Formata as datas para exibição
+            const dataInicioRaw = campoInicio.value;
+            const dataFimRaw = campoFim.value;
+            const formatarData = (str) => {
+                if (!str) return '—';
+                const d = new Date(str);
+                return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+            };
+
+            document.getElementById('modal-nome').textContent = nomeVal || '—';
+            document.getElementById('modal-equip').textContent = equipVal || '—';
+            document.getElementById('modal-qtd').textContent = qtdVal + ' unidade(s)';
+            document.getElementById('modal-inicio').textContent = formatarData(dataInicioRaw);
+            document.getElementById('modal-fim').textContent = formatarData(dataFimRaw);
+
+            modal.show();
+        });
+
+        btnConfirmar.addEventListener('click', () => {
+            modal.hide();
+            overlay.style.display = 'flex';
+            form.submit();
+        });
+
+        form.addEventListener('submit', (e) => {
+            if (!form.checkValidity()) {
+                e.preventDefault();
+                form.classList.add('was-validated');
+            }
+        });
+
+        function verificarAlertaAprovacao() {
+            const qtd = parseInt(qtyInput.value);
+            const tipo = campoEquip.value;
+            const alertaExistente = document.getElementById('alerta-aprovacao');
+            if (alertaExistente) alertaExistente.remove();
+
+            if (tipo === 'notebook') {
+                // Calcula notebooks já ocupados no horário selecionado
+                const dataI = campoInicio.value ? new Date(campoInicio.value) : null;
+                const dataF = campoFim.value ? new Date(campoFim.value) : null;
+
+                let jaAprovados = 0;
+                if (dataI && dataF) {
+                    reservasExistentes.forEach(res => {
+                        if (res.equip === 'notebook' && dataI < res.fim && dataF > res.inicio) {
+                            jaAprovados += res.quant;
+                        }
+                    });
+                }
+
+                const limiteAuto = 13;
+                const restantes = Math.max(0, limiteAuto - jaAprovados);
+
+                if ((jaAprovados + qtd) > limiteAuto) {
+                    const alerta = document.createElement('div');
+                    alerta.id = 'alerta-aprovacao';
+                    alerta.className = 'alert alert-warning mt-3 small py-2 border-0 shadow-sm';
+                    alerta.innerHTML = `<i class="bi bi-hourglass-split me-2"></i>Aprovação manual necessária (somente ${restantes} restantes).`;
+                    qtyInput.closest('.col-12').appendChild(alerta);
+                }
+            }
+        }
+
+        function atualizarTudo() {
+            if (!campoInicio.value || !campoFim.value || !campoEquip) return;
+
+            const dataI = new Date(campoInicio.value);
+            const dataF = new Date(campoFim.value);
+            const tipo = campoEquip.value;
+            const limiteMax = (tipo === 'notebook') ? 26 : 20;
+
+            let ocupados = 0;
+            reservasExistentes.forEach(res => {
+                if (res.equip === tipo && dataI < res.fim && dataF > res.inicio) {
+                    ocupados += res.quant;
+                }
+            });
+
+            maxGlobal = Math.max(0, limiteMax - ocupados);
+            
+            if (parseInt(qtyInput.value) > maxGlobal) qtyInput.value = maxGlobal || 1;
+            if (maxGlobal === 0) qtyInput.value = 0;
+
+            const nomeLimpo = tipo.charAt(0).toUpperCase() + tipo.slice(1); 
+            campoEquip.options[campoEquip.selectedIndex].text = `${nomeLimpo} (Disponível: ${maxGlobal})`;
+            
+            if (maxGlobal > 0) {
+                qtyMsg.style.display = 'block';
+                qtyMsg.innerText = `Limite máximo para este horário: ${maxGlobal}`;
+            } else {
+                qtyMsg.style.display = 'none';
+            }
+
+            atualizarBotoes();
+        }
+
+        campoEquip.addEventListener('change', atualizarTudo);
+        atualizarTudo();
+    });
+</script>
+</body>
+</html>
