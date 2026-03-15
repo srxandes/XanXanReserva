@@ -30,7 +30,7 @@ Sistema web desenvolvido em Django para gerenciamento de reservas de notebooks e
 
 ```bash
 python manage.py createsuperuser
-```bash
+```
 
 > **Importante:** O usuário `tecno_camb` tem permissões exclusivas de remover outros admins. Crie-o primeiro.
 
